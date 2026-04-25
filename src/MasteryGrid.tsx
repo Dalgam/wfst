@@ -10,6 +10,8 @@ import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 import Tooltip from '@mui/material/Tooltip';
 import Checkbox from '@mui/material/Checkbox';
+import ToggleButton from '@mui/material/ToggleButton';
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import itemsData from './items-data.json';
@@ -167,6 +169,7 @@ export default function MasteryGrid() {
   const [parts, setParts] = React.useState<Record<string, string[]>>(loadParts);
   const [category, setCategory] = React.useState('All');
   const [search, setSearch] = React.useState('');
+  const [masteredFilter, setMasteredFilter] = React.useState<'all' | 'hide' | 'only'>('all');
   const deferredSearch = React.useDeferredValue(search);
   const highlightedRef = React.useRef<WFItem | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -185,9 +188,11 @@ export default function MasteryGrid() {
     return allItems.filter((i) => {
       const matchCat = category === 'All' || i.category === category;
       const matchSearch = !q || i.name.toLowerCase().includes(q);
+      if (masteredFilter === 'hide' && mastered.has(i.uniqueName)) return false;
+      if (masteredFilter === 'only' && !mastered.has(i.uniqueName)) return false;
       return matchCat && matchSearch;
     });
-  }, [category, deferredSearch]);
+  }, [category, deferredSearch, masteredFilter, mastered]);
 
   const masteredCount = React.useMemo(
     () => filtered.filter((i) => mastered.has(i.uniqueName)).length,
@@ -304,6 +309,16 @@ export default function MasteryGrid() {
             value={filtered.length > 0 ? (masteredCount / filtered.length) * 100 : 0}
             sx={{ flex: 1, height: 8, borderRadius: 4 }}
           />
+          <ToggleButtonGroup
+            value={masteredFilter}
+            exclusive
+            onChange={(_, v) => { if (v) setMasteredFilter(v); }}
+            size="small"
+          >
+            <ToggleButton value="all" sx={{ px: 1.5 }}>All</ToggleButton>
+            <ToggleButton value="hide" sx={{ px: 1.5 }}>Hide mastered</ToggleButton>
+            <ToggleButton value="only" sx={{ px: 1.5 }}>Only mastered</ToggleButton>
+          </ToggleButtonGroup>
         </Box>
       </Box>
 
