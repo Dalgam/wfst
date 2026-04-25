@@ -1,0 +1,30 @@
+{
+  "name": "material-ui-vite-ts",
+  "version": "7.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate-items": "node scripts/generate-items.mjs",
+    "predev": "node scripts/generate-items.mjs",
+    "dev": "vite",
+    "prebuild": "node scripts/generate-items.mjs",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.0.0",
+    "@mui/material": "^9.0.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "warframe-items": "^1.1269.87"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.10"
+  }
+}
