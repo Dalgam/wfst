@@ -16,6 +16,14 @@ import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import GitHubIcon from "@mui/icons-material/GitHub";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutlined";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import Table from "@mui/material/Table";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableRow from "@mui/material/TableRow";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import itemsData from "./items-data.json";
 
@@ -277,6 +285,7 @@ export default function MasteryGrid() {
   const [masteredFilter, setMasteredFilter] = React.useState<'all' | 'hide' | 'only'>(
     (['all', 'hide', 'only'] as const).includes(initParams.get('filter') as 'all') ? initParams.get('filter') as 'all' | 'hide' | 'only' : 'all'
   );
+  const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const [primeFilter, setPrimeFilter] = React.useState<'all' | 'prime' | 'non-prime'>(
     (['all', 'prime', 'non-prime'] as const).includes(initParams.get('prime') as 'all') ? initParams.get('prime') as 'all' | 'prime' | 'non-prime' : 'all'
   );
@@ -463,6 +472,53 @@ export default function MasteryGrid() {
             </Box>
           </Tooltip>
         </Box>
+        <Dialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle>Keyboard Shortcuts</DialogTitle>
+          <DialogContent>
+            {[
+              { heading: 'Global' },
+              { keys: [isMac ? '⌘' : 'Ctrl', 'K'], desc: 'Focus search bar' },
+              { heading: 'No item selected (not searching)' },
+              { keys: [isMac ? '⌘' : 'Ctrl', ','], desc: 'Cycle category left' },
+              { keys: [isMac ? '⌘' : 'Ctrl', '.'], desc: 'Cycle category right' },
+              { heading: 'While searching' },
+              { keys: ['↑', '↓'], desc: 'Navigate autocomplete results' },
+              { keys: ['Esc'], desc: 'Clear search and close autocomplete' },
+              { heading: 'Item selected / highlighted in search' },
+              { keys: [isMac ? '⌘' : 'Ctrl', 'Space'], desc: 'Toggle mastered on highlighted item' },
+              { keys: [isMac ? '⌘' : 'Ctrl', '1'], desc: 'Toggle component 1 on highlighted item' },
+              { keys: [isMac ? '⌘' : 'Ctrl', '2'], desc: 'Toggle component 2 on highlighted item' },
+              { keys: [isMac ? '⌘' : 'Ctrl', '3'], desc: 'Toggle component 3 on highlighted item' },
+              { keys: [isMac ? '⌘' : 'Ctrl', '4'], desc: 'Toggle component 4 on highlighted item' },
+              { heading: 'Card image' },
+              { keys: [isMac ? '⌘' : 'Ctrl', 'click'], desc: 'Open wiki page for item in new tab' },
+            ].map((row, i) =>
+              'heading' in row ? (
+                <Typography key={i} variant="overline" color="text.secondary" sx={{ display: 'block', mt: i === 0 ? 0 : 2 }}>
+                  {row.heading}
+                </Typography>
+              ) : (
+                <Table key={i} size="small" sx={{ mb: 0 }}>
+                  <TableBody>
+                    <TableRow sx={{ '&:last-child td': { border: 0 } }}>
+                      <TableCell sx={{ width: 180, pl: 0 }}>
+                        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
+                          {row.keys.map((k, ki) => (
+                            <React.Fragment key={ki}>
+                              {ki > 0 && <Typography variant="caption" color="text.disabled">+</Typography>}
+                              <Kbd>{k}</Kbd>
+                            </React.Fragment>
+                          ))}
+                        </Box>
+                      </TableCell>
+                      <TableCell sx={{ color: 'text.secondary' }}>{row.desc}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              )
+            )}
+          </DialogContent>
+        </Dialog>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Autocomplete
           freeSolo
@@ -610,6 +666,7 @@ export default function MasteryGrid() {
           <Button size="small" variant="outlined" onClick={handleExport}>Export</Button>
           <Button size="small" variant="outlined" onClick={() => importRef.current?.click()}>Import</Button>
           <input ref={importRef} type="file" accept=".json" hidden onChange={handleImport} />
+          <Button size="small" variant="outlined" startIcon={<HelpOutlineIcon />} onClick={() => setShortcutsOpen(true)}>Shortcuts</Button>
         </Box>
       </Box>
 
