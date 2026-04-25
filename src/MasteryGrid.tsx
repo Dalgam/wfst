@@ -286,6 +286,7 @@ export default function MasteryGrid() {
     (['all', 'hide', 'only'] as const).includes(initParams.get('filter') as 'all') ? initParams.get('filter') as 'all' | 'hide' | 'only' : 'all'
   );
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
+  const [filterSearch, setFilterSearch] = React.useState(false);
   const [primeFilter, setPrimeFilter] = React.useState<'all' | 'prime' | 'non-prime'>(
     (['all', 'prime', 'non-prime'] as const).includes(initParams.get('prime') as 'all') ? initParams.get('prime') as 'all' | 'prime' | 'non-prime' : 'all'
   );
@@ -328,6 +329,19 @@ export default function MasteryGrid() {
       return matchCat && matchSearch;
     });
   }, [category, deferredSearch, masteredFilter, primeFilter, mastered]);
+
+  const searchOptions = React.useMemo(() => {
+    const pool = filterSearch
+      ? allItems.filter((i) => {
+          if (masteredFilter === 'hide' && mastered.has(i.uniqueName)) return false;
+          if (masteredFilter === 'only' && !mastered.has(i.uniqueName)) return false;
+          if (primeFilter === 'prime' && !i.isPrime) return false;
+          if (primeFilter === 'non-prime' && i.isPrime) return false;
+          return true;
+        })
+      : allItems;
+    return [...new Set(pool.map((i) => i.name))];
+  }, [filterSearch, masteredFilter, primeFilter, mastered]);
 
   const masteredCount = React.useMemo(
     () => filtered.filter((i) => mastered.has(i.uniqueName)).length,
@@ -519,107 +533,6 @@ export default function MasteryGrid() {
             )}
           </DialogContent>
         </Dialog>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-        <Autocomplete
-          freeSolo
-          sx={{ flex: 1 }}
-          autoHighlight
-          options={[...new Set(allItems.map((i) => i.name))]}
-          inputValue={search}
-          onInputChange={(_, value) => {
-            setSearch(value);
-            const q = value.trim().toLowerCase();
-            highlightedRef.current = q
-              ? (allItems.find((i) => i.name.toLowerCase().includes(q)) ?? null)
-              : null;
-          }}
-          onChange={(_, value) => setSearch(value ?? "")}
-          onHighlightChange={(_, option) => {
-            highlightedRef.current = option
-              ? (itemByName.get(option) ?? null)
-              : null;
-          }}
-          renderOption={(props, option) => {
-            const item = itemByName.get(option);
-            const itemMastered = item ? mastered.has(item.uniqueName) : false;
-            const obtainedParts = item ? (parts[item.uniqueName] ?? []) : [];
-            return (
-              <li
-                {...props}
-                key={option}
-                onClick={(e) => {
-                  if ((e.metaKey || e.ctrlKey) && item?.wikiaUrl) {
-                    e.preventDefault();
-                    openWiki(item.wikiaUrl);
-                  } else {
-                    (props as React.HTMLAttributes<HTMLLIElement>).onClick?.(e);
-                  }
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 0.5,
-                    py: 0.5,
-                    width: "100%",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CheckCircleIcon
-                      sx={{
-                        fontSize: 16,
-                        color: itemMastered
-                          ? "primary.main"
-                          : "action.disabled",
-                      }}
-                    />
-                    <Typography variant="body2">{option}</Typography>
-                  </Box>
-                  {item && item.parts.length > 0 && (
-                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                      {item.parts.map((part) => {
-                        const partDone = obtainedParts.includes(
-                          part.uniqueName,
-                        );
-                        return (
-                          <Chip
-                            key={part.uniqueName}
-                            label={part.name}
-                            size="small"
-                            variant={partDone ? "filled" : "outlined"}
-                            color={partDone ? "primary" : "default"}
-                            sx={{ height: 18, fontSize: "0.65rem" }}
-                          />
-                        );
-                      })}
-                    </Box>
-                  )}
-                </Box>
-              </li>
-            );
-          }}
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              inputRef={searchRef}
-              label="Search items"
-              size="small"
-              sx={{ flex: 1 }}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") {
-                  setSearch("");
-                  highlightedRef.current = null;
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-          )}
-        />
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-          <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd><Typography variant="caption" color="text.disabled">+</Typography><Kbd>K</Kbd>
-        </Box>
-        </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
           <Typography
             variant="body2"
@@ -667,6 +580,97 @@ export default function MasteryGrid() {
           <Button size="small" variant="outlined" onClick={() => importRef.current?.click()}>Import</Button>
           <input ref={importRef} type="file" accept=".json" hidden onChange={handleImport} />
           <Button size="small" variant="outlined" startIcon={<HelpOutlineIcon />} onClick={() => setShortcutsOpen(true)}>Shortcuts</Button>
+        </Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+          <Autocomplete
+            freeSolo
+            sx={{ flex: 1 }}
+            autoHighlight
+            options={searchOptions}
+            inputValue={search}
+            onInputChange={(_, value) => {
+              setSearch(value);
+              const q = value.trim().toLowerCase();
+              highlightedRef.current = q
+                ? (allItems.find((i) => i.name.toLowerCase().includes(q)) ?? null)
+                : null;
+            }}
+            onChange={(_, value) => setSearch(value ?? "")}
+            onHighlightChange={(_, option) => {
+              highlightedRef.current = option
+                ? (itemByName.get(option) ?? null)
+                : null;
+            }}
+            renderOption={(props, option) => {
+              const item = itemByName.get(option);
+              const itemMastered = item ? mastered.has(item.uniqueName) : false;
+              const obtainedParts = item ? (parts[item.uniqueName] ?? []) : [];
+              return (
+                <li
+                  {...props}
+                  key={option}
+                  onClick={(e) => {
+                    if ((e.metaKey || e.ctrlKey) && item?.wikiaUrl) {
+                      e.preventDefault();
+                      openWiki(item.wikiaUrl);
+                    } else {
+                      (props as React.HTMLAttributes<HTMLLIElement>).onClick?.(e);
+                    }
+                  }}
+                >
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, py: 0.5, width: "100%" }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <CheckCircleIcon sx={{ fontSize: 16, color: itemMastered ? "primary.main" : "action.disabled" }} />
+                      <Typography variant="body2">{option}</Typography>
+                    </Box>
+                    {item && item.parts.length > 0 && (
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                        {item.parts.map((part) => {
+                          const partDone = obtainedParts.includes(part.uniqueName);
+                          return (
+                            <Chip
+                              key={part.uniqueName}
+                              label={part.name}
+                              size="small"
+                              variant={partDone ? "filled" : "outlined"}
+                              color={partDone ? "primary" : "default"}
+                              sx={{ height: 18, fontSize: "0.65rem" }}
+                            />
+                          );
+                        })}
+                      </Box>
+                    )}
+                  </Box>
+                </li>
+              );
+            }}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                inputRef={searchRef}
+                label="Search items"
+                size="small"
+                sx={{ flex: 1 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Escape") {
+                    setSearch("");
+                    highlightedRef.current = null;
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+            )}
+          />
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+            <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd><Typography variant="caption" color="text.disabled">+</Typography><Kbd>K</Kbd>
+          </Box>
+          <Tooltip title="Apply active mastered and Prime filters to search results">
+            <FormControlLabel
+              control={<Checkbox size="small" checked={filterSearch} onChange={(e) => setFilterSearch(e.target.checked)} />}
+              label={<Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>Filter search</Typography>}
+              sx={{ mr: 0, flexShrink: 0 }}
+            />
+          </Tooltip>
         </Box>
       </Box>
 
