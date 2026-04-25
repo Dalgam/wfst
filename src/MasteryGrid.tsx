@@ -257,9 +257,14 @@ export default function MasteryGrid() {
         </Typography>
         <Autocomplete
           freeSolo
+          autoHighlight
           options={[...new Set(allItems.map((i) => i.name))]}
           inputValue={search}
-          onInputChange={(_, value) => setSearch(value)}
+          onInputChange={(_, value) => {
+            setSearch(value);
+            const q = value.trim().toLowerCase();
+            highlightedRef.current = q ? (allItems.find((i) => i.name.toLowerCase().includes(q)) ?? null) : null;
+          }}
           onChange={(_, value) => setSearch(value ?? '')}
           onHighlightChange={(_, option) => {
             highlightedRef.current = option ? (itemByName.get(option) ?? null) : null;
