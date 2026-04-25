@@ -15,6 +15,7 @@ import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import GitHubIcon from "@mui/icons-material/GitHub";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import itemsData from "./items-data.json";
 
@@ -446,9 +447,22 @@ export default function MasteryGrid() {
   return (
     <Box sx={{ width: "100%" }}>
       <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-        <Typography variant="h5" gutterBottom>
-          Warframe Mastery Tracker
-        </Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+          <Typography variant="h5">
+            Warframe Mastery Tracker
+          </Typography>
+          <Tooltip title="GitHub">
+            <Box
+              component="a"
+              href="https://github.com/dalgam/wfst"
+              target="_blank"
+              rel="noopener noreferrer"
+              sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+            >
+              <GitHubIcon fontSize="small" />
+            </Box>
+          </Tooltip>
+        </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
         <Autocomplete
           freeSolo

@@ -1,41 +1,36 @@
-# Material UI - Vite example in TypeScript
+# Warframe Mastery Tracker
 
-## How to use
+Track your Warframe mastery progress across all masterable items.
 
-Download the example [or clone the repo](https://github.com/mui/material-ui):
+**Live app:** https://dalgam.github.io/wfst/
 
-<!-- #target-branch-reference -->
+> This project was a vibe coding learning experience created by an experienced developer trying new tools.
+
+## Features
+
+- Browse all masterable Warframe items (759 items) organized by category
+- Mark items as mastered; track individual crafting parts
+- Filter by mastered status or Prime items
+- Full-text search with autocomplete and keyboard navigation
+- Keyboard shortcuts: `Cmd/Ctrl+K` focus search, `Cmd/Ctrl+Space` toggle mastered, `Cmd/Ctrl+1–4` toggle parts, `,`/`.` cycle categories
+- Search and filter state synced to URL query params
+- Export / import progress as JSON
+- Wiki links on every card (header click or `Cmd/Ctrl+click` image)
+- Virtualized grid for smooth scrolling across hundreds of items
+
+## Stack
+
+- React 19 + TypeScript
+- MUI v9 (Material UI)
+- Vite
+- `@tanstack/react-virtual` — window virtualizer for grid rows
+- `warframe-items` — item data (pre-generated at build time via `scripts/generate-items.mjs`)
+
+## Development
 
 ```bash
-curl https://codeload.github.com/mui/material-ui/tar.gz/master | tar -xz --strip=2 material-ui-master/examples/material-ui-vite-ts
-cd material-ui-vite-ts
+yarn install
+yarn dev
 ```
 
-Install it and run:
-
-```bash
-npm install
-npm run dev
-```
-
-or:
-
-<!-- #target-branch-reference -->
-
-[![Edit on CodeSandbox](https://codesandbox.io/static/img/play-codesandbox.svg)](https://codesandbox.io/p/sandbox/github/mui/material-ui/tree/master/examples/material-ui-vite-ts)
-
-[![Edit on StackBlitz](https://developer.stackblitz.com/img/open_in_stackblitz.svg)](https://stackblitz.com/github/mui/material-ui/tree/master/examples/material-ui-vite-ts)
-
-## The idea behind the example
-
-<!-- #host-reference -->
-
-This example demonstrates how you can use Material UI with [Vite](https://vite.dev) in [TypeScript](https://github.com/Microsoft/TypeScript).
-It includes `@mui/material` and its peer dependencies, including [Emotion](https://emotion.sh/docs/introduction), the default style engine in Material UI.
-
-## What's next?
-
-<!-- #host-reference -->
-
-You now have a working example project.
-You can head back to the documentation and continue by browsing the [templates](https://mui.com/material-ui/getting-started/templates/) section.
+Build pre-generates `src/items-data.json` from the `warframe-items` package before bundling.
