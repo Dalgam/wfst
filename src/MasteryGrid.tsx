@@ -1,8 +1,11 @@
 import * as React from 'react';
 import { useWindowVirtualizer } from '@tanstack/react-virtual';
+import Autocomplete from '@mui/material/Autocomplete';
+import Chip from '@mui/material/Chip';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
+import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 import Tooltip from '@mui/material/Tooltip';
@@ -161,6 +164,8 @@ export default function MasteryGrid() {
   const [mastered, setMastered] = React.useState<Set<string>>(loadMastered);
   const [parts, setParts] = React.useState<Record<string, string[]>>(loadParts);
   const [category, setCategory] = React.useState('All');
+  const [search, setSearch] = React.useState('');
+  const [highlighted, setHighlighted] = React.useState<WFItem | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = React.useState(800);
 
@@ -172,10 +177,14 @@ export default function MasteryGrid() {
     return () => obs.disconnect();
   }, []);
 
-  const filtered = React.useMemo(
-    () => category === 'All' ? allItems : allItems.filter((i) => i.category === category),
-    [category],
-  );
+  const filtered = React.useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return allItems.filter((i) => {
+      const matchCat = category === 'All' || i.category === category;
+      const matchSearch = !q || i.name.toLowerCase().includes(q);
+      return matchCat && matchSearch;
+    });
+  }, [category, search]);
 
   const masteredCount = React.useMemo(
     () => filtered.filter((i) => mastered.has(i.uniqueName)).length,
@@ -213,12 +222,75 @@ export default function MasteryGrid() {
     });
   }, []);
 
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (!highlighted || !(e.metaKey || e.ctrlKey)) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        toggle(highlighted.uniqueName);
+        return;
+      }
+      const num = parseInt(e.key);
+      if (num >= 1 && num <= 4 && highlighted.parts[num - 1]) {
+        e.preventDefault();
+        togglePart(highlighted.uniqueName, highlighted.parts[num - 1].uniqueName);
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [highlighted, toggle, togglePart]);
+
   return (
     <Box sx={{ width: '100%' }}>
       <Box sx={{ px: 2, pt: 2, pb: 1 }}>
         <Typography variant="h5" gutterBottom>
           Warframe Mastery Tracker
         </Typography>
+        <Autocomplete
+          freeSolo
+          options={[...new Set(allItems.map((i) => i.name))]}
+          inputValue={search}
+          onInputChange={(_, value) => setSearch(value)}
+          onChange={(_, value) => setSearch(value ?? '')}
+          onHighlightChange={(_, option) => {
+            setHighlighted(option ? (allItems.find((i) => i.name === option) ?? null) : null);
+          }}
+          renderOption={(props, option) => {
+            const item = allItems.find((i) => i.name === option);
+            const itemMastered = item ? mastered.has(item.uniqueName) : false;
+            const obtainedParts = item ? (parts[item.uniqueName] ?? []) : [];
+            return (
+              <li {...props} key={option}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5, py: 0.5, width: '100%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CheckCircleIcon sx={{ fontSize: 16, color: itemMastered ? 'primary.main' : 'action.disabled' }} />
+                    <Typography variant="body2">{option}</Typography>
+                  </Box>
+                  {item && item.parts.length > 0 && (
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                      {item.parts.map((part) => {
+                        const partDone = obtainedParts.includes(part.uniqueName);
+                        return (
+                          <Chip
+                            key={part.uniqueName}
+                            label={part.name}
+                            size="small"
+                            variant={partDone ? 'filled' : 'outlined'}
+                            color={partDone ? 'primary' : 'default'}
+                            sx={{ height: 18, fontSize: '0.65rem' }}
+                          />
+                        );
+                      })}
+                    </Box>
+                  )}
+                </Box>
+              </li>
+            );
+          }}
+          renderInput={(params) => (
+            <TextField {...params} label="Search items" size="small" sx={{ mb: 2 }} />
+          )}
+        />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
           <Typography variant="body2" color="text.secondary" sx={{ whiteSpace: 'nowrap' }}>
             {masteredCount} / {filtered.length}
