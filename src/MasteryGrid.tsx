@@ -173,6 +173,8 @@ export default function MasteryGrid() {
   const deferredSearch = React.useDeferredValue(search);
   const highlightedRef = React.useRef<WFItem | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const searchRef = React.useRef<HTMLInputElement>(null);
+  const isMac = navigator.platform.toUpperCase().includes('MAC');
   const [containerWidth, setContainerWidth] = React.useState(800);
 
   React.useEffect(() => {
@@ -232,6 +234,11 @@ export default function MasteryGrid() {
 
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchRef.current?.focus();
+        return;
+      }
       const item = highlightedRef.current;
       if (!item || !(e.metaKey || e.ctrlKey)) return;
       if (e.code === 'Space') {
@@ -302,7 +309,20 @@ export default function MasteryGrid() {
             );
           }}
           renderInput={(params) => (
-            <TextField {...params} label="Search items" size="small" sx={{ mb: 2 }} />
+            <TextField
+              {...params}
+              inputRef={searchRef}
+              label={`Search items (${isMac ? '⌘' : 'Ctrl+'}K)`}
+              size="small"
+              sx={{ mb: 2 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setSearch('');
+                  highlightedRef.current = null;
+                  (e.target as HTMLInputElement).blur();
+                }
+              }}
+            />
           )}
         />
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
