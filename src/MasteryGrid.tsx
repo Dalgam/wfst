@@ -230,11 +230,24 @@ const ItemCard = React.memo(function ItemCard({
 export default function MasteryGrid() {
   const [mastered, setMastered] = React.useState<Set<string>>(loadMastered);
   const [parts, setParts] = React.useState<Record<string, string[]>>(loadParts);
-  const [category, setCategory] = React.useState("All");
-  const [search, setSearch] = React.useState("");
-  const [masteredFilter, setMasteredFilter] = React.useState<
-    "all" | "hide" | "only"
-  >("all");
+
+  const initParams = new URLSearchParams(window.location.search);
+  const [category, setCategory] = React.useState(
+    CATEGORIES.includes(initParams.get('cat') ?? '') ? initParams.get('cat')! : 'All'
+  );
+  const [search, setSearch] = React.useState(initParams.get('q') ?? '');
+  const [masteredFilter, setMasteredFilter] = React.useState<'all' | 'hide' | 'only'>(
+    (['all', 'hide', 'only'] as const).includes(initParams.get('filter') as 'all') ? initParams.get('filter') as 'all' | 'hide' | 'only' : 'all'
+  );
+  React.useEffect(() => {
+    const params = new URLSearchParams();
+    if (search) params.set('q', search);
+    if (category !== 'All') params.set('cat', category);
+    if (masteredFilter !== 'all') params.set('filter', masteredFilter);
+    const qs = params.toString();
+    history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
+  }, [search, category, masteredFilter]);
+
   const deferredSearch = React.useDeferredValue(search);
   const highlightedRef = React.useRef<WFItem | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
