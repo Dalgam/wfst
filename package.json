@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "generate-items": "node scripts/generate-items.mjs",
+    "update-items": "bash scripts/update-items.sh",
     "predev": "node scripts/generate-items.mjs",
     "dev": "vite",
     "prebuild": "node scripts/generate-items.mjs",
@@ -19,7 +20,7 @@
     "@tanstack/react-virtual": "^3.13.24",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "warframe-items": "^1.1269.87"
+    "warframe-items": "file:./warframe-items"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",

@@ -1,5 +1,4 @@
-import Items from 'warframe-items';
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { resolve, dirname } from 'node:path';
 
@@ -7,8 +6,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const isPart = (c) => c.uniqueName?.includes('/Recipes/');
 
-const items = new Items();
-const masterable = items
+const allItems = JSON.parse(
+  readFileSync(resolve(__dirname, '../warframe-items/data/json/All.json'), 'utf8')
+);
+
+const masterable = allItems
   .filter((i) => i.masterable)
   .map(({ uniqueName, name, category, imageName, wikiaThumbnail, wikiaUrl, isPrime, masteryReq, components }) => ({
     uniqueName,
