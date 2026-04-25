@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { useWindowVirtualizer } from '@tanstack/react-virtual';
 import Box from '@mui/material/Box';
 import Tab from '@mui/material/Tab';
 import Tabs from '@mui/material/Tabs';
@@ -6,8 +7,8 @@ import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 import Tooltip from '@mui/material/Tooltip';
 import Checkbox from '@mui/material/Checkbox';
-import FormControlLabel from '@mui/material/FormControlLabel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import itemsData from './items-data.json';
 
 type Part = { uniqueName: string; name: string };
@@ -40,6 +41,9 @@ const CATEGORIES = [
 const IMG_CDN = 'https://cdn.warframestat.us/img/';
 const MASTERED_KEY = 'wfst-mastered';
 const PARTS_KEY = 'wfst-parts';
+const CARD_MIN_WIDTH = 192;
+const CARD_HEIGHT = 360;
+const GAP = 8;
 
 const allItems = itemsData as WFItem[];
 
@@ -72,15 +76,122 @@ function getImageUrl(item: WFItem): string {
   return `${IMG_CDN}${item.imageName}`;
 }
 
+type CardProps = {
+  item: WFItem;
+  done: boolean;
+  obtainedParts: string[];
+  onToggle: (uniqueName: string) => void;
+  onTogglePart: (itemUniqueName: string, partUniqueName: string) => void;
+};
+
+const ItemCard = React.memo(function ItemCard({ item, done, obtainedParts, onToggle, onTogglePart }: CardProps) {
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: CARD_HEIGHT,
+        borderRadius: 1,
+        overflow: 'hidden',
+        border: '2px solid',
+        borderColor: done ? 'primary.main' : 'transparent',
+        transition: 'border-color 0.15s, transform 0.15s, box-shadow 0.15s',
+        bgcolor: 'grey.800',
+        '&:hover': { transform: 'scale(1.05)', boxShadow: 6 },
+      }}
+    >
+      <Tooltip title={item.name} placement="top" arrow>
+        <Box
+          onClick={() => onToggle(item.uniqueName)}
+          sx={{ position: 'relative', cursor: 'pointer', overflow: 'hidden', flex: 1 }}
+        >
+          <Box
+            component="img"
+            src={getImageUrl(item)}
+            alt={item.name}
+            loading="lazy"
+            sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+            onError={(e) => {
+              if (item.imageName) {
+                (e.target as HTMLImageElement).src = `${IMG_CDN}${item.imageName}`;
+              }
+            }}
+          />
+          {done && (
+            <CheckCircleIcon
+              sx={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                fontSize: 18,
+                color: 'primary.main',
+                bgcolor: 'background.paper',
+                borderRadius: '50%',
+              }}
+            />
+          )}
+        </Box>
+      </Tooltip>
+
+      {item.parts.length > 0 && (
+        <Box sx={{ px: 1, py: 0.5, borderTop: 1, borderColor: 'divider', display: 'flex', flexDirection: 'column' }}>
+          {item.parts.map((part) => (
+            <FormControlLabel
+              key={part.uniqueName}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={obtainedParts.includes(part.uniqueName)}
+                  onChange={() => onTogglePart(item.uniqueName, part.uniqueName)}
+                  onClick={(e) => e.stopPropagation()}
+                  sx={{ py: 0.25 }}
+                />
+              }
+              label={<Typography variant="caption" noWrap>{part.name}</Typography>}
+              sx={{ m: 0 }}
+            />
+          ))}
+        </Box>
+      )}
+    </Box>
+  );
+});
+
 export default function MasteryGrid() {
   const [mastered, setMastered] = React.useState<Set<string>>(loadMastered);
   const [parts, setParts] = React.useState<Record<string, string[]>>(loadParts);
   const [category, setCategory] = React.useState('All');
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = React.useState(800);
 
-  const filtered = category === 'All' ? allItems : allItems.filter((i) => i.category === category);
-  const masteredCount = filtered.filter((i) => mastered.has(i.uniqueName)).length;
+  React.useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width));
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
 
-  function toggle(uniqueName: string) {
+  const filtered = React.useMemo(
+    () => category === 'All' ? allItems : allItems.filter((i) => i.category === category),
+    [category],
+  );
+
+  const masteredCount = React.useMemo(
+    () => filtered.filter((i) => mastered.has(i.uniqueName)).length,
+    [filtered, mastered],
+  );
+
+  const cols = Math.max(1, Math.floor((containerWidth + GAP) / (CARD_MIN_WIDTH + GAP)));
+  const rows = Math.ceil(filtered.length / cols);
+
+  const virtualizer = useWindowVirtualizer({
+    count: rows,
+    estimateSize: () => CARD_HEIGHT + GAP,
+    overscan: 3,
+  });
+
+  const toggle = React.useCallback((uniqueName: string) => {
     setMastered((prev) => {
       const next = new Set(prev);
       if (next.has(uniqueName)) next.delete(uniqueName);
@@ -88,9 +199,9 @@ export default function MasteryGrid() {
       saveMastered(next);
       return next;
     });
-  }
+  }, []);
 
-  function togglePart(itemUniqueName: string, partUniqueName: string) {
+  const togglePart = React.useCallback((itemUniqueName: string, partUniqueName: string) => {
     setParts((prev) => {
       const obtained = prev[itemUniqueName] ?? [];
       const next = obtained.includes(partUniqueName)
@@ -100,7 +211,7 @@ export default function MasteryGrid() {
       saveParts(updated);
       return updated;
     });
-  }
+  }, []);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -132,113 +243,44 @@ export default function MasteryGrid() {
         ))}
       </Tabs>
 
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(192px, 1fr))',
-          gridAutoRows: '360px',
-          gap: 1,
-          p: 2,
-        }}
-      >
-        {filtered.map((item) => {
-          const done = mastered.has(item.uniqueName);
-          const obtainedParts = parts[item.uniqueName] ?? [];
-          const hasParts = item.parts.length > 0;
-
-          return (
-            <Box
-              key={item.uniqueName}
-              sx={{
-                display: 'flex',
-                flexDirection: 'column',
-                height: '100%',
-                borderRadius: 1,
-                overflow: 'hidden',
-                border: '2px solid',
-                borderColor: done ? 'primary.main' : 'transparent',
-                transition: 'border-color 0.15s, transform 0.15s, box-shadow 0.15s',
-                bgcolor: 'grey.800',
-                '&:hover': {
-                  transform: 'scale(1.05)',
-                  boxShadow: 6,
-                },
-              }}
-            >
-              <Tooltip title={item.name} placement="top" arrow>
-                <Box
-                  onClick={() => toggle(item.uniqueName)}
-                  sx={{
-                    position: 'relative',
-                    cursor: 'pointer',
-                    overflow: 'hidden',
-                    flex: 1,
-                  }}
-                >
-                  <Box
-                    component="img"
-                    src={getImageUrl(item)}
-                    alt={item.name}
-                    loading="lazy"
-                    sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
-                    onError={(e) => {
-                      if (item.imageName) {
-                        (e.target as HTMLImageElement).src = `${IMG_CDN}${item.imageName}`;
-                      }
-                    }}
+      <Box ref={containerRef} sx={{ px: 2, pt: 2 }}>
+        <Box
+          sx={{
+            height: virtualizer.getTotalSize(),
+            position: 'relative',
+          }}
+        >
+          {virtualizer.getVirtualItems().map((virtualRow) => {
+            const startIdx = virtualRow.index * cols;
+            const rowItems = filtered.slice(startIdx, startIdx + cols);
+            return (
+              <Box
+                key={virtualRow.key}
+                style={{
+                  position: 'absolute',
+                  top: virtualRow.start,
+                  left: 0,
+                  right: 0,
+                  height: CARD_HEIGHT,
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${cols}, 1fr)`,
+                  gap: GAP,
+                }}
+              >
+                {rowItems.map((item) => (
+                  <ItemCard
+                    key={item.uniqueName}
+                    item={item}
+                    done={mastered.has(item.uniqueName)}
+                    obtainedParts={parts[item.uniqueName] ?? []}
+                    onToggle={toggle}
+                    onTogglePart={togglePart}
                   />
-                  {done && (
-                    <CheckCircleIcon
-                      sx={{
-                        position: 'absolute',
-                        bottom: 4,
-                        right: 4,
-                        fontSize: 18,
-                        color: 'primary.main',
-                        bgcolor: 'background.paper',
-                        borderRadius: '50%',
-                      }}
-                    />
-                  )}
-                </Box>
-              </Tooltip>
-
-              {hasParts && (
-                <Box
-                  sx={{
-                    px: 1,
-                    py: 0.5,
-                    borderTop: 1,
-                    borderColor: 'divider',
-                    display: 'flex',
-                    flexDirection: 'column',
-                  }}
-                >
-                  {item.parts.map((part) => (
-                    <FormControlLabel
-                      key={part.uniqueName}
-                      control={
-                        <Checkbox
-                          size="small"
-                          checked={obtainedParts.includes(part.uniqueName)}
-                          onChange={() => togglePart(item.uniqueName, part.uniqueName)}
-                          onClick={(e) => e.stopPropagation()}
-                          sx={{ py: 0.25 }}
-                        />
-                      }
-                      label={
-                        <Typography variant="caption" noWrap>
-                          {part.name}
-                        </Typography>
-                      }
-                      sx={{ m: 0 }}
-                    />
-                  ))}
-                </Box>
-              )}
-            </Box>
-          );
-        })}
+                ))}
+              </Box>
+            );
+          })}
+        </Box>
       </Box>
     </Box>
   );

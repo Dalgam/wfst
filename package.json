@@ -16,6 +16,7 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.0.0",
     "@mui/material": "^9.0.0",
+    "@tanstack/react-virtual": "^3.13.24",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "warframe-items": "^1.1269.87"
