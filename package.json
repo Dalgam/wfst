@@ -18,8 +18,7 @@
     "@mui/material": "^9.0.0",
     "@tanstack/react-virtual": "^3.13.24",
     "react": "^19.2.5",
-    "react-dom": "^19.2.5",
-    "warframe-items": "file:./warframe-items"
+    "react-dom": "^19.2.5"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
