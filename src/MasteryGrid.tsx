@@ -5,8 +5,12 @@ import Tabs from '@mui/material/Tabs';
 import Typography from '@mui/material/Typography';
 import LinearProgress from '@mui/material/LinearProgress';
 import Tooltip from '@mui/material/Tooltip';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import itemsData from './items-data.json';
+
+type Part = { uniqueName: string; name: string };
 
 type WFItem = {
   uniqueName: string;
@@ -16,6 +20,7 @@ type WFItem = {
   wikiaThumbnail?: string;
   isPrime?: boolean;
   masteryReq?: number;
+  parts: Part[];
 };
 
 const CATEGORIES = [
@@ -33,22 +38,33 @@ const CATEGORIES = [
 ];
 
 const IMG_CDN = 'https://cdn.warframestat.us/img/';
-const STORAGE_KEY = 'wfst-mastered';
+const MASTERED_KEY = 'wfst-mastered';
+const PARTS_KEY = 'wfst-parts';
 
 const allItems = itemsData as WFItem[];
 
 function loadMastered(): Set<string> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(MASTERED_KEY);
     if (raw) return new Set(JSON.parse(raw));
-  } catch {
-    // ignore
-  }
+  } catch { /* ignore */ }
   return new Set();
 }
 
 function saveMastered(set: Set<string>) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([...set]));
+  localStorage.setItem(MASTERED_KEY, JSON.stringify([...set]));
+}
+
+function loadParts(): Record<string, string[]> {
+  try {
+    const raw = localStorage.getItem(PARTS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return {};
+}
+
+function saveParts(parts: Record<string, string[]>) {
+  localStorage.setItem(PARTS_KEY, JSON.stringify(parts));
 }
 
 function getImageUrl(item: WFItem): string {
@@ -58,6 +74,7 @@ function getImageUrl(item: WFItem): string {
 
 export default function MasteryGrid() {
   const [mastered, setMastered] = React.useState<Set<string>>(loadMastered);
+  const [parts, setParts] = React.useState<Record<string, string[]>>(loadParts);
   const [category, setCategory] = React.useState('All');
 
   const filtered = category === 'All' ? allItems : allItems.filter((i) => i.category === category);
@@ -70,6 +87,18 @@ export default function MasteryGrid() {
       else next.add(uniqueName);
       saveMastered(next);
       return next;
+    });
+  }
+
+  function togglePart(itemUniqueName: string, partUniqueName: string) {
+    setParts((prev) => {
+      const obtained = prev[itemUniqueName] ?? [];
+      const next = obtained.includes(partUniqueName)
+        ? obtained.filter((u) => u !== partUniqueName)
+        : [...obtained, partUniqueName];
+      const updated = { ...prev, [itemUniqueName]: next };
+      saveParts(updated);
+      return updated;
     });
   }
 
@@ -107,64 +136,107 @@ export default function MasteryGrid() {
         sx={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(192px, 1fr))',
+          gridAutoRows: '360px',
           gap: 1,
           p: 2,
         }}
       >
         {filtered.map((item) => {
           const done = mastered.has(item.uniqueName);
+          const obtainedParts = parts[item.uniqueName] ?? [];
+          const hasParts = item.parts.length > 0;
+
           return (
-            <Tooltip key={item.uniqueName} title={item.name} placement="top" arrow>
-              <Box
-                onClick={() => toggle(item.uniqueName)}
-                sx={{
-                  position: 'relative',
-                  cursor: 'pointer',
-                  borderRadius: 1,
-                  overflow: 'hidden',
-                  border: '2px solid',
-                  borderColor: done ? 'primary.main' : 'transparent',
-                  transition: 'border-color 0.15s, transform 0.15s, box-shadow 0.15s',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                    boxShadow: 6,
-                  },
-                  aspectRatio: '1',
-                  bgcolor: 'grey.800',
-                }}
-              >
+            <Box
+              key={item.uniqueName}
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                height: '100%',
+                borderRadius: 1,
+                overflow: 'hidden',
+                border: '2px solid',
+                borderColor: done ? 'primary.main' : 'transparent',
+                transition: 'border-color 0.15s, transform 0.15s, box-shadow 0.15s',
+                bgcolor: 'grey.800',
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                  boxShadow: 6,
+                },
+              }}
+            >
+              <Tooltip title={item.name} placement="top" arrow>
                 <Box
-                  component="img"
-                  src={getImageUrl(item)}
-                  alt={item.name}
-                  loading="lazy"
+                  onClick={() => toggle(item.uniqueName)}
                   sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                    display: 'block',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    overflow: 'hidden',
+                    flex: 1,
                   }}
-                  onError={(e) => {
-                    if (item.imageName) {
-                      (e.target as HTMLImageElement).src = `${IMG_CDN}${item.imageName}`;
-                    }
-                  }}
-                />
-                {done && (
-                  <CheckCircleIcon
-                    sx={{
-                      position: 'absolute',
-                      bottom: 2,
-                      right: 2,
-                      fontSize: 16,
-                      color: 'primary.main',
-                      bgcolor: 'background.paper',
-                      borderRadius: '50%',
+                >
+                  <Box
+                    component="img"
+                    src={getImageUrl(item)}
+                    alt={item.name}
+                    loading="lazy"
+                    sx={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }}
+                    onError={(e) => {
+                      if (item.imageName) {
+                        (e.target as HTMLImageElement).src = `${IMG_CDN}${item.imageName}`;
+                      }
                     }}
                   />
-                )}
-              </Box>
-            </Tooltip>
+                  {done && (
+                    <CheckCircleIcon
+                      sx={{
+                        position: 'absolute',
+                        bottom: 4,
+                        right: 4,
+                        fontSize: 18,
+                        color: 'primary.main',
+                        bgcolor: 'background.paper',
+                        borderRadius: '50%',
+                      }}
+                    />
+                  )}
+                </Box>
+              </Tooltip>
+
+              {hasParts && (
+                <Box
+                  sx={{
+                    px: 1,
+                    py: 0.5,
+                    borderTop: 1,
+                    borderColor: 'divider',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  {item.parts.map((part) => (
+                    <FormControlLabel
+                      key={part.uniqueName}
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={obtainedParts.includes(part.uniqueName)}
+                          onChange={() => togglePart(item.uniqueName, part.uniqueName)}
+                          onClick={(e) => e.stopPropagation()}
+                          sx={{ py: 0.25 }}
+                        />
+                      }
+                      label={
+                        <Typography variant="caption" noWrap>
+                          {part.name}
+                        </Typography>
+                      }
+                      sx={{ m: 0 }}
+                    />
+                  ))}
+                </Box>
+              )}
+            </Box>
           );
         })}
       </Box>
