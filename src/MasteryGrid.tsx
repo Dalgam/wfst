@@ -49,6 +49,7 @@ const CARD_HEIGHT = 360;
 const GAP = 8;
 
 const allItems = itemsData as WFItem[];
+const itemByName = new Map(allItems.map((i) => [i.name, i]));
 
 function loadMastered(): Set<string> {
   try {
@@ -78,6 +79,7 @@ function getImageUrl(item: WFItem): string {
   if (item.wikiaThumbnail) return item.wikiaThumbnail;
   return `${IMG_CDN}${item.imageName}`;
 }
+
 
 type CardProps = {
   item: WFItem;
@@ -165,7 +167,8 @@ export default function MasteryGrid() {
   const [parts, setParts] = React.useState<Record<string, string[]>>(loadParts);
   const [category, setCategory] = React.useState('All');
   const [search, setSearch] = React.useState('');
-  const [highlighted, setHighlighted] = React.useState<WFItem | null>(null);
+  const deferredSearch = React.useDeferredValue(search);
+  const highlightedRef = React.useRef<WFItem | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = React.useState(800);
 
@@ -178,13 +181,13 @@ export default function MasteryGrid() {
   }, []);
 
   const filtered = React.useMemo(() => {
-    const q = search.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
     return allItems.filter((i) => {
       const matchCat = category === 'All' || i.category === category;
       const matchSearch = !q || i.name.toLowerCase().includes(q);
       return matchCat && matchSearch;
     });
-  }, [category, search]);
+  }, [category, deferredSearch]);
 
   const masteredCount = React.useMemo(
     () => filtered.filter((i) => mastered.has(i.uniqueName)).length,
@@ -224,21 +227,22 @@ export default function MasteryGrid() {
 
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (!highlighted || !(e.metaKey || e.ctrlKey)) return;
+      const item = highlightedRef.current;
+      if (!item || !(e.metaKey || e.ctrlKey)) return;
       if (e.code === 'Space') {
         e.preventDefault();
-        toggle(highlighted.uniqueName);
+        toggle(item.uniqueName);
         return;
       }
       const num = parseInt(e.key);
-      if (num >= 1 && num <= 4 && highlighted.parts[num - 1]) {
+      if (num >= 1 && num <= 4 && item.parts[num - 1]) {
         e.preventDefault();
-        togglePart(highlighted.uniqueName, highlighted.parts[num - 1].uniqueName);
+        togglePart(item.uniqueName, item.parts[num - 1].uniqueName);
       }
     };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [highlighted, toggle, togglePart]);
+  }, [toggle, togglePart]);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -253,10 +257,10 @@ export default function MasteryGrid() {
           onInputChange={(_, value) => setSearch(value)}
           onChange={(_, value) => setSearch(value ?? '')}
           onHighlightChange={(_, option) => {
-            setHighlighted(option ? (allItems.find((i) => i.name === option) ?? null) : null);
+            highlightedRef.current = option ? (itemByName.get(option) ?? null) : null;
           }}
           renderOption={(props, option) => {
-            const item = allItems.find((i) => i.name === option);
+            const item = itemByName.get(option);
             const itemMastered = item ? mastered.has(item.uniqueName) : false;
             const obtainedParts = item ? (parts[item.uniqueName] ?? []) : [];
             return (
