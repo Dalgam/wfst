@@ -346,6 +346,17 @@ export default function MasteryGrid() {
     [filtered, mastered],
   );
 
+  const searchValueRef = React.useRef(search);
+  searchValueRef.current = search;
+  const searchOptionsRef = React.useRef(searchOptions);
+  searchOptionsRef.current = searchOptions;
+  const filterSearchRef = React.useRef(filterSearch);
+  filterSearchRef.current = filterSearch;
+  const masteredFilterRef = React.useRef(masteredFilter);
+  masteredFilterRef.current = masteredFilter;
+  const masteredSetRef = React.useRef(mastered);
+  masteredSetRef.current = mastered;
+
   const cols = Math.max(
     1,
     Math.floor((containerWidth + GAP) / (CARD_MIN_WIDTH + GAP)),
@@ -397,6 +408,17 @@ export default function MasteryGrid() {
         if (e.code === "Space") {
           e.preventDefault();
           toggle(item.uniqueName);
+          const willBeMastered = !masteredSetRef.current.has(item.uniqueName);
+          const hidingMastered = filterSearchRef.current && masteredFilterRef.current === 'hide';
+          const showingOnlyMastered = filterSearchRef.current && masteredFilterRef.current === 'only';
+          if ((hidingMastered && willBeMastered) || (showingOnlyMastered && !willBeMastered)) {
+            const q = searchValueRef.current.trim().toLowerCase();
+            const next = searchOptionsRef.current
+              .filter((name) => name !== item.name && (!q || name.toLowerCase().includes(q)))
+              .map((name) => itemByName.get(name) ?? null)
+              .find(Boolean) ?? null;
+            highlightedRef.current = next;
+          }
           return;
         }
         if (num >= 1 && num <= 4 && item.parts[num - 1]) {
