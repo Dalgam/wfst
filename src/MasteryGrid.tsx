@@ -34,7 +34,6 @@ type WFItem = {
   name: string;
   category?: string;
   imageName?: string;
-  wikiaThumbnail?: string;
   wikiaUrl?: string;
   isPrime?: boolean;
   masteryReq?: number;
@@ -94,7 +93,6 @@ function saveParts(parts: Record<string, string[]>) {
 }
 
 function getImageUrl(item: WFItem): string {
-  if (item.wikiaThumbnail) return item.wikiaThumbnail;
   return `${IMG_CDN}${item.imageName}`;
 }
 

@@ -12,12 +12,11 @@ const allItems = JSON.parse(
 
 const masterable = allItems
   .filter((i) => i.masterable)
-  .map(({ uniqueName, name, category, imageName, wikiaThumbnail, wikiaUrl, isPrime, masteryReq, components }) => ({
+  .map(({ uniqueName, name, category, imageName, wikiaUrl, isPrime, masteryReq, components }) => ({
     uniqueName,
     name,
     category,
     imageName,
-    wikiaThumbnail,
     wikiaUrl,
     isPrime,
     masteryReq,
