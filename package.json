@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "generate-items": "node scripts/generate-items.mjs",
-    "update-items": "bash scripts/update-items.sh",
     "predev": "node scripts/generate-items.mjs",
     "dev": "vite",
     "prebuild": "node scripts/generate-items.mjs",

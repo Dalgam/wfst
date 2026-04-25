@@ -914,9 +914,6 @@ vite@^8.0.10:
   optionalDependencies:
     fsevents "~2.3.3"
 
-"warframe-items@file:./warframe-items":
-  version "0.0.0-dev"
-
 yaml@^1.10.0:
   version "1.10.3"
   resolved "https://registry.yarnpkg.com/yaml/-/yaml-1.10.3.tgz#76e407ed95c42684fb8e14641e5de62fe65bbcb3"
