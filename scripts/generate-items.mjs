@@ -10,12 +10,13 @@ const isPart = (c) => c.uniqueName?.includes('/Recipes/');
 const items = new Items();
 const masterable = items
   .filter((i) => i.masterable)
-  .map(({ uniqueName, name, category, imageName, wikiaThumbnail, isPrime, masteryReq, components }) => ({
+  .map(({ uniqueName, name, category, imageName, wikiaThumbnail, wikiaUrl, isPrime, masteryReq, components }) => ({
     uniqueName,
     name,
     category,
     imageName,
     wikiaThumbnail,
+    wikiaUrl,
     isPrime,
     masteryReq,
     parts: components?.filter(isPart).map((c) => ({ uniqueName: c.uniqueName, name: c.name })) ?? [],

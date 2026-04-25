@@ -14,6 +14,7 @@ import Button from "@mui/material/Button";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import itemsData from "./items-data.json";
 
@@ -25,6 +26,7 @@ type WFItem = {
   category?: string;
   imageName?: string;
   wikiaThumbnail?: string;
+  wikiaUrl?: string;
   isPrime?: boolean;
   masteryReq?: number;
   parts: Part[];
@@ -49,7 +51,7 @@ const MASTERED_KEY = "wfst-mastered";
 const PARTS_KEY = "wfst-parts";
 const CARD_MIN_WIDTH = 192;
 const CARD_HEIGHT = 360;
-const GAP = 8;
+const GAP = 16;
 
 const allItems = itemsData as WFItem[];
 const itemByName = new Map(allItems.map((i) => [i.name, i]));
@@ -85,6 +87,10 @@ function saveParts(parts: Record<string, string[]>) {
 function getImageUrl(item: WFItem): string {
   if (item.wikiaThumbnail) return item.wikiaThumbnail;
   return `${IMG_CDN}${item.imageName}`;
+}
+
+function openWiki(url: string) {
+  window.open(url, '_blank');
 }
 
 function Kbd({ children }: { children: React.ReactNode }) {
@@ -146,7 +152,13 @@ const ItemCard = React.memo(function ItemCard({
     >
       <Tooltip title={item.name} placement="top" arrow>
         <Box
-          onClick={() => onToggle(item.uniqueName)}
+          onClick={(e) => {
+            if ((e.metaKey || e.ctrlKey) && item.wikiaUrl) {
+              openWiki(item.wikiaUrl);
+            } else {
+              onToggle(item.uniqueName);
+            }
+          }}
           sx={{
             position: "relative",
             cursor: "pointer",
@@ -172,6 +184,31 @@ const ItemCard = React.memo(function ItemCard({
               }
             }}
           />
+          <Box
+            component={item.wikiaUrl ? 'a' : 'div'}
+            href={item.wikiaUrl}
+            target="_blank"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            sx={{
+              position: 'absolute',
+              top: 0, left: 0, right: 0,
+              display: 'flex',
+              alignItems: 'center',
+              px: 1,
+              py: 0.5,
+              bgcolor: 'rgba(0,0,0,0.55)',
+              backdropFilter: 'blur(4px)',
+              gap: 0.5,
+              textDecoration: 'none',
+              cursor: item.wikiaUrl ? 'pointer' : 'default',
+              '&:hover': item.wikiaUrl ? { bgcolor: 'rgba(0,0,0,0.75)' } : {},
+            }}
+          >
+            <Typography variant="caption" noWrap sx={{ flex: 1, color: 'grey.300', lineHeight: 1.3 }}>
+              {item.name}
+            </Typography>
+            {item.wikiaUrl && <OpenInNewIcon sx={{ fontSize: 13, color: 'grey.400', flexShrink: 0 }} />}
+          </Box>
           {done && (
             <CheckCircleIcon
               sx={{
@@ -239,14 +276,18 @@ export default function MasteryGrid() {
   const [masteredFilter, setMasteredFilter] = React.useState<'all' | 'hide' | 'only'>(
     (['all', 'hide', 'only'] as const).includes(initParams.get('filter') as 'all') ? initParams.get('filter') as 'all' | 'hide' | 'only' : 'all'
   );
+  const [primeFilter, setPrimeFilter] = React.useState<'all' | 'prime' | 'non-prime'>(
+    (['all', 'prime', 'non-prime'] as const).includes(initParams.get('prime') as 'all') ? initParams.get('prime') as 'all' | 'prime' | 'non-prime' : 'all'
+  );
   React.useEffect(() => {
     const params = new URLSearchParams();
     if (search) params.set('q', search);
     if (category !== 'All') params.set('cat', category);
     if (masteredFilter !== 'all') params.set('filter', masteredFilter);
+    if (primeFilter !== 'all') params.set('prime', primeFilter);
     const qs = params.toString();
     history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [search, category, masteredFilter]);
+  }, [search, category, masteredFilter, primeFilter]);
 
   const deferredSearch = React.useDeferredValue(search);
   const highlightedRef = React.useRef<WFItem | null>(null);
@@ -271,11 +312,12 @@ export default function MasteryGrid() {
       const matchCat = category === "All" || i.category === category;
       const matchSearch = !q || i.name.toLowerCase().includes(q);
       if (masteredFilter === "hide" && mastered.has(i.uniqueName)) return false;
-      if (masteredFilter === "only" && !mastered.has(i.uniqueName))
-        return false;
+      if (masteredFilter === "only" && !mastered.has(i.uniqueName)) return false;
+      if (primeFilter === "prime" && !i.isPrime) return false;
+      if (primeFilter === "non-prime" && i.isPrime) return false;
       return matchCat && matchSearch;
     });
-  }, [category, deferredSearch, masteredFilter, mastered]);
+  }, [category, deferredSearch, masteredFilter, primeFilter, mastered]);
 
   const masteredCount = React.useMemo(
     () => filtered.filter((i) => mastered.has(i.uniqueName)).length,
@@ -432,7 +474,18 @@ export default function MasteryGrid() {
             const itemMastered = item ? mastered.has(item.uniqueName) : false;
             const obtainedParts = item ? (parts[item.uniqueName] ?? []) : [];
             return (
-              <li {...props} key={option}>
+              <li
+                {...props}
+                key={option}
+                onClick={(e) => {
+                  if ((e.metaKey || e.ctrlKey) && item?.wikiaUrl) {
+                    e.preventDefault();
+                    openWiki(item.wikiaUrl);
+                  } else {
+                    (props as React.HTMLAttributes<HTMLLIElement>).onClick?.(e);
+                  }
+                }}
+              >
                 <Box
                   sx={{
                     display: "flex",
@@ -529,6 +582,16 @@ export default function MasteryGrid() {
             <ToggleButton value="only" sx={{ px: 1.5 }}>
               Only mastered
             </ToggleButton>
+          </ToggleButtonGroup>
+          <ToggleButtonGroup
+            value={primeFilter}
+            exclusive
+            onChange={(_, v) => { if (v) setPrimeFilter(v); }}
+            size="small"
+          >
+            <ToggleButton value="all" sx={{ px: 1.5 }}>All</ToggleButton>
+            <ToggleButton value="prime" sx={{ px: 1.5 }}>Prime</ToggleButton>
+            <ToggleButton value="non-prime" sx={{ px: 1.5 }}>Non-Prime</ToggleButton>
           </ToggleButtonGroup>
           <Button size="small" variant="outlined" onClick={handleExport}>Export</Button>
           <Button size="small" variant="outlined" onClick={() => importRef.current?.click()}>Import</Button>
