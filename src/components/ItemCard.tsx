@@ -6,6 +6,7 @@ import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import type { WFItem } from "../types";
 import { CARD_HEIGHT, IMG_CDN } from "../constants";
 import { getImageUrl, openWiki } from "../utils";
@@ -25,6 +26,8 @@ export const ItemCard = React.memo(function ItemCard({
   onToggle,
   onTogglePart,
 }: CardProps) {
+  const unobtainable = item.obtainable === false;
+
   return (
     <Box
       sx={{
@@ -37,11 +40,10 @@ export const ItemCard = React.memo(function ItemCard({
         borderColor: done ? "primary.main" : "transparent",
         transition: "border-color 0.15s, transform 0.15s, box-shadow 0.15s",
         bgcolor: "grey.800",
-        "&:hover": { transform: "scale(1.05)", boxShadow: 6 },
+"&:hover": { transform: "scale(1.05)", boxShadow: 6 },
       }}
     >
-      <Tooltip title={item.name} placement="top" arrow>
-        <Box
+      <Box
           onClick={(e) => {
             if ((e.metaKey || e.ctrlKey) && item.wikiaUrl) {
               openWiki(item.wikiaUrl);
@@ -102,6 +104,11 @@ export const ItemCard = React.memo(function ItemCard({
             >
               {item.name}
             </Typography>
+            {unobtainable && (
+              <Tooltip title="Unobtainable — Founder exclusive" placement="top">
+                <InfoOutlinedIcon sx={{ fontSize: 13, color: "warning.main", flexShrink: 0 }} />
+              </Tooltip>
+            )}
             {item.wikiaUrl && (
               <OpenInNewIcon sx={{ fontSize: 13, color: "grey.400", flexShrink: 0 }} />
             )}
@@ -119,8 +126,8 @@ export const ItemCard = React.memo(function ItemCard({
               }}
             />
           )}
-        </Box>
-      </Tooltip>
+
+      </Box>
 
       {item.parts.length > 0 && (
         <Box

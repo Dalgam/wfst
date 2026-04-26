@@ -6,6 +6,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const isPart = (c) => c.uniqueName?.includes('/Recipes/');
 
+const UNOBTAINABLE = new Set([
+  '/Lotus/Powersuits/Excalibur/ExcaliburPrime',
+  '/Lotus/Weapons/Tenno/Pistol/LatoPrime',
+  '/Lotus/Weapons/Tenno/Melee/LongSword/SkanaPrime',
+]);
+
 const allItems = JSON.parse(
   readFileSync(resolve(__dirname, '../warframe-items/data/json/All.json'), 'utf8')
 );
@@ -20,6 +26,7 @@ const masterable = allItems
     wikiaUrl,
     isPrime,
     masteryReq,
+    ...(UNOBTAINABLE.has(uniqueName) && { obtainable: false }),
     parts: components?.filter(isPart).map((c) => ({ uniqueName: c.uniqueName, name: c.name })) ?? [],
   }));
 

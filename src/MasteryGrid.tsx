@@ -46,6 +46,7 @@ export default function MasteryGrid() {
 
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const [filterSearch, setFilterSearch] = React.useState(false);
+  const [showUnobtainable, setShowUnobtainable] = React.useState(false);
 
   const highlightedRef = React.useRef<WFItem | null>(null);
   const searchRef = React.useRef<HTMLInputElement>(null);
@@ -59,28 +60,27 @@ export default function MasteryGrid() {
     return allItems.filter((i) => {
       const matchCat = category === "All" || i.category === category;
       const matchSearch = !q || i.name.toLowerCase().includes(q);
+      if (!showUnobtainable && i.obtainable === false) return false;
       if (masteredFilter === "hide" && mastered.has(i.uniqueName)) return false;
       if (masteredFilter === "only" && !mastered.has(i.uniqueName)) return false;
       if (primeFilter === "prime" && !i.isPrime) return false;
       if (primeFilter === "non-prime" && i.isPrime) return false;
       return matchCat && matchSearch;
     });
-  }, [category, deferredSearch, masteredFilter, primeFilter, mastered]);
+  }, [category, deferredSearch, masteredFilter, primeFilter, mastered, showUnobtainable]);
 
   const searchOptions = React.useMemo(() => {
-    const pool = filterSearch
-      ? allItems.filter((i) => {
-          if (masteredFilter === "hide" && mastered.has(i.uniqueName))
-            return false;
-          if (masteredFilter === "only" && !mastered.has(i.uniqueName))
-            return false;
-          if (primeFilter === "prime" && !i.isPrime) return false;
-          if (primeFilter === "non-prime" && i.isPrime) return false;
-          return true;
-        })
-      : allItems;
+    const pool = allItems.filter((i) => {
+      if (!showUnobtainable && i.obtainable === false) return false;
+      if (!filterSearch) return true;
+      if (masteredFilter === "hide" && mastered.has(i.uniqueName)) return false;
+      if (masteredFilter === "only" && !mastered.has(i.uniqueName)) return false;
+      if (primeFilter === "prime" && !i.isPrime) return false;
+      if (primeFilter === "non-prime" && i.isPrime) return false;
+      return true;
+    });
     return [...new Set(pool.map((i) => i.name))];
-  }, [filterSearch, masteredFilter, primeFilter, mastered]);
+  }, [filterSearch, masteredFilter, primeFilter, mastered, showUnobtainable]);
 
   const masteredCount = React.useMemo(
     () => filtered.filter((i) => mastered.has(i.uniqueName)).length,
@@ -402,6 +402,23 @@ export default function MasteryGrid() {
               label={
                 <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
                   Filter search
+                </Typography>
+              }
+              sx={{ mr: 0, flexShrink: 0 }}
+            />
+          </Tooltip>
+          <Tooltip title="Show Founder-exclusive items that cannot be obtained">
+            <FormControlLabel
+              control={
+                <Checkbox
+                  size="small"
+                  checked={showUnobtainable}
+                  onChange={(e) => setShowUnobtainable(e.target.checked)}
+                />
+              }
+              label={
+                <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                  Show unobtainable
                 </Typography>
               }
               sx={{ mr: 0, flexShrink: 0 }}

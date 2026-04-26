@@ -7,6 +7,7 @@ export type WFItem = {
   imageName?: string;
   wikiaUrl?: string;
   isPrime?: boolean;
+  obtainable?: boolean;
   masteryReq?: number;
   parts: Part[];
 };
