@@ -24,7 +24,7 @@ const masterable = allItems
     category,
     imageName,
     wikiaUrl,
-    isPrime,
+    isPrime: isPrime || name.includes(' Prime'),
     masteryReq,
     ...(UNOBTAINABLE.has(uniqueName) && { obtainable: false }),
     parts: components?.filter(isPart).map((c) => ({ uniqueName: c.uniqueName, name: c.name })) ?? [],
