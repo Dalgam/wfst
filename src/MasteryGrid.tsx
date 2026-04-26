@@ -607,21 +607,35 @@ export default function MasteryGrid() {
             sx={{ flex: 1 }}
             autoHighlight
             options={searchOptions}
+            filterOptions={(options, state) => {
+              const q = state.inputValue.trim().toLowerCase();
+              if (!q) return options;
+              const matches = options.filter((o) => o.toLowerCase().includes(q));
+              return matches.length > 0 ? matches : ['__no_results__'];
+            }}
             inputValue={search}
             onInputChange={(_, value) => {
               setSearch(value);
               const q = value.trim().toLowerCase();
-              highlightedRef.current = q
-                ? (allItems.find((i) => i.name.toLowerCase().includes(q)) ?? null)
-                : null;
+              const matchName = q
+                ? searchOptionsRef.current.find((name) => name.toLowerCase().includes(q))
+                : undefined;
+              highlightedRef.current = matchName ? (itemByName.get(matchName) ?? null) : null;
             }}
-            onChange={(_, value) => setSearch(value ?? "")}
+            onChange={(_, value) => { if (value !== '__no_results__') setSearch(value ?? ""); }}
             onHighlightChange={(_, option) => {
-              highlightedRef.current = option
+              highlightedRef.current = (option && option !== '__no_results__')
                 ? (itemByName.get(option) ?? null)
                 : null;
             }}
             renderOption={(props, option) => {
+              if (option === '__no_results__') {
+                return (
+                  <li {...props} key="__no_results__" style={{ pointerEvents: 'none' }}>
+                    <Typography variant="body2" color="text.secondary">No results</Typography>
+                  </li>
+                );
+              }
               const item = itemByName.get(option);
               const itemMastered = item ? mastered.has(item.uniqueName) : false;
               const obtainedParts = item ? (parts[item.uniqueName] ?? []) : [];
@@ -725,6 +739,11 @@ export default function MasteryGrid() {
       </Box>
 
       <Box ref={containerRef} sx={{ px: 2, pt: 2 }}>
+        {filtered.length === 0 && (
+          <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+            No results
+          </Typography>
+        )}
         <Box
           sx={{
             height: virtualizer.getTotalSize(),
