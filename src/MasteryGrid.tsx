@@ -14,306 +14,45 @@ import Button from "@mui/material/Button";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import GitHubIcon from "@mui/icons-material/GitHub";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutlined";
-import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
-import DialogContent from "@mui/material/DialogContent";
-import Table from "@mui/material/Table";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableRow from "@mui/material/TableRow";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import itemsData from "./items-data.json";
-
-type Part = { uniqueName: string; name: string };
-
-type WFItem = {
-  uniqueName: string;
-  name: string;
-  category?: string;
-  imageName?: string;
-  wikiaUrl?: string;
-  isPrime?: boolean;
-  masteryReq?: number;
-  parts: Part[];
-};
-
-const CATEGORIES = [
-  "All",
-  "Warframes",
-  "Primary",
-  "Secondary",
-  "Melee",
-  "Arch-Gun",
-  "Arch-Melee",
-  "Archwing",
-  "Pets",
-  "Sentinels",
-  "Misc",
-];
-
-const IMG_CDN = "https://cdn.warframestat.us/img/";
-const MASTERED_KEY = "wfst-mastered";
-const PARTS_KEY = "wfst-parts";
-const CARD_MIN_WIDTH = 192;
-const CARD_HEIGHT = 360;
-const GAP = 16;
-
-const allItems = itemsData as WFItem[];
-const itemByName = new Map(allItems.map((i) => [i.name, i]));
-
-function loadMastered(): Set<string> {
-  try {
-    const raw = localStorage.getItem(MASTERED_KEY);
-    if (raw) return new Set(JSON.parse(raw));
-  } catch {
-    /* ignore */
-  }
-  return new Set();
-}
-
-function saveMastered(set: Set<string>) {
-  localStorage.setItem(MASTERED_KEY, JSON.stringify([...set]));
-}
-
-function loadParts(): Record<string, string[]> {
-  try {
-    const raw = localStorage.getItem(PARTS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {
-    /* ignore */
-  }
-  return {};
-}
-
-function saveParts(parts: Record<string, string[]>) {
-  localStorage.setItem(PARTS_KEY, JSON.stringify(parts));
-}
-
-function getImageUrl(item: WFItem): string {
-  return `${IMG_CDN}${item.imageName}`;
-}
-
-function openWiki(url: string) {
-  window.open(url, '_blank');
-}
-
-function Kbd({ children }: { children: React.ReactNode }) {
-  return (
-    <Box
-      component="kbd"
-      sx={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        px: 0.75,
-        py: 0.25,
-        borderRadius: '4px',
-        border: '1px solid',
-        borderColor: 'grey.600',
-        borderBottomWidth: '2px',
-        bgcolor: 'grey.800',
-        color: 'text.secondary',
-        fontSize: '0.7rem',
-        fontFamily: 'monospace',
-        lineHeight: 1.4,
-        userSelect: 'none',
-      }}
-    >
-      {children}
-    </Box>
-  );
-}
-
-type CardProps = {
-  item: WFItem;
-  done: boolean;
-  obtainedParts: string[];
-  onToggle: (uniqueName: string) => void;
-  onTogglePart: (itemUniqueName: string, partUniqueName: string) => void;
-};
-
-const ItemCard = React.memo(function ItemCard({
-  item,
-  done,
-  obtainedParts,
-  onToggle,
-  onTogglePart,
-}: CardProps) {
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        flexDirection: "column",
-        height: CARD_HEIGHT,
-        borderRadius: 1,
-        overflow: "hidden",
-        border: "2px solid",
-        borderColor: done ? "primary.main" : "transparent",
-        transition: "border-color 0.15s, transform 0.15s, box-shadow 0.15s",
-        bgcolor: "grey.800",
-        "&:hover": { transform: "scale(1.05)", boxShadow: 6 },
-      }}
-    >
-      <Tooltip title={item.name} placement="top" arrow>
-        <Box
-          onClick={(e) => {
-            if ((e.metaKey || e.ctrlKey) && item.wikiaUrl) {
-              openWiki(item.wikiaUrl);
-            } else {
-              onToggle(item.uniqueName);
-            }
-          }}
-          sx={{
-            position: "relative",
-            cursor: "pointer",
-            overflow: "hidden",
-            flex: 1,
-          }}
-        >
-          <Box
-            component="img"
-            src={getImageUrl(item)}
-            alt={item.name}
-            loading="lazy"
-            sx={{
-              width: "100%",
-              height: "100%",
-              objectFit: "contain",
-              display: "block",
-            }}
-            onError={(e) => {
-              if (item.imageName) {
-                (e.target as HTMLImageElement).src =
-                  `${IMG_CDN}${item.imageName}`;
-              }
-            }}
-          />
-          <Box
-            component={item.wikiaUrl ? 'a' : 'div'}
-            href={item.wikiaUrl}
-            target="_blank"
-            onClick={(e: React.MouseEvent) => e.stopPropagation()}
-            sx={{
-              position: 'absolute',
-              top: 0, left: 0, right: 0,
-              display: 'flex',
-              alignItems: 'center',
-              px: 1,
-              py: 0.5,
-              bgcolor: 'rgba(0,0,0,0.55)',
-              backdropFilter: 'blur(4px)',
-              gap: 0.5,
-              textDecoration: 'none',
-              cursor: item.wikiaUrl ? 'pointer' : 'default',
-              '&:hover': item.wikiaUrl ? { bgcolor: 'rgba(0,0,0,0.75)' } : {},
-            }}
-          >
-            <Typography variant="caption" noWrap sx={{ flex: 1, color: 'grey.300', lineHeight: 1.3 }}>
-              {item.name}
-            </Typography>
-            {item.wikiaUrl && <OpenInNewIcon sx={{ fontSize: 13, color: 'grey.400', flexShrink: 0 }} />}
-          </Box>
-          {done && (
-            <CheckCircleIcon
-              sx={{
-                position: "absolute",
-                top: 4,
-                right: 4,
-                fontSize: 18,
-                color: "primary.main",
-                bgcolor: "background.paper",
-                borderRadius: "50%",
-              }}
-            />
-          )}
-        </Box>
-      </Tooltip>
-
-      {item.parts.length > 0 && (
-        <Box
-          sx={{
-            px: 1,
-            py: 0.5,
-            borderTop: 1,
-            borderColor: "divider",
-            display: "flex",
-            flexDirection: "column",
-          }}
-        >
-          {item.parts.map((part) => (
-            <FormControlLabel
-              key={part.uniqueName}
-              control={
-                <Checkbox
-                  size="small"
-                  checked={obtainedParts.includes(part.uniqueName)}
-                  onChange={() =>
-                    onTogglePart(item.uniqueName, part.uniqueName)
-                  }
-                  onClick={(e) => e.stopPropagation()}
-                  sx={{ py: 0.25 }}
-                />
-              }
-              label={
-                <Typography variant="caption" noWrap>
-                  {part.name}
-                </Typography>
-              }
-              sx={{ m: 0 }}
-            />
-          ))}
-        </Box>
-      )}
-    </Box>
-  );
-});
+import type { WFItem } from "./types";
+import { CATEGORIES, CARD_MIN_WIDTH, CARD_HEIGHT, GAP, allItems, itemByName } from "./constants";
+import { loadMastered, saveMastered, loadParts, saveParts } from "./storage";
+import { openWiki } from "./utils";
+import { Kbd } from "./components/Kbd";
+import { ItemCard } from "./components/ItemCard";
+import { ShortcutsDialog } from "./components/ShortcutsDialog";
+import { useUrlState } from "./hooks/useUrlState";
+import { useContainerWidth } from "./hooks/useContainerWidth";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
+import { useImportExport } from "./hooks/useImportExport";
 
 export default function MasteryGrid() {
   const [mastered, setMastered] = React.useState<Set<string>>(loadMastered);
   const [parts, setParts] = React.useState<Record<string, string[]>>(loadParts);
 
-  const initParams = new URLSearchParams(window.location.search);
-  const [category, setCategory] = React.useState(
-    CATEGORIES.includes(initParams.get('cat') ?? '') ? initParams.get('cat')! : 'All'
-  );
-  const [search, setSearch] = React.useState(initParams.get('q') ?? '');
-  const [masteredFilter, setMasteredFilter] = React.useState<'all' | 'hide' | 'only'>(
-    (['all', 'hide', 'only'] as const).includes(initParams.get('filter') as 'all') ? initParams.get('filter') as 'all' | 'hide' | 'only' : 'all'
-  );
+  const {
+    category,
+    setCategory,
+    search,
+    setSearch,
+    masteredFilter,
+    setMasteredFilter,
+    primeFilter,
+    setPrimeFilter,
+  } = useUrlState();
+
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const [filterSearch, setFilterSearch] = React.useState(false);
-  const [primeFilter, setPrimeFilter] = React.useState<'all' | 'prime' | 'non-prime'>(
-    (['all', 'prime', 'non-prime'] as const).includes(initParams.get('prime') as 'all') ? initParams.get('prime') as 'all' | 'prime' | 'non-prime' : 'all'
-  );
-  React.useEffect(() => {
-    const params = new URLSearchParams();
-    if (search) params.set('q', search);
-    if (category !== 'All') params.set('cat', category);
-    if (masteredFilter !== 'all') params.set('filter', masteredFilter);
-    if (primeFilter !== 'all') params.set('prime', primeFilter);
-    const qs = params.toString();
-    history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname);
-  }, [search, category, masteredFilter, primeFilter]);
 
-  const deferredSearch = React.useDeferredValue(search);
   const highlightedRef = React.useRef<WFItem | null>(null);
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const searchRef = React.useRef<HTMLInputElement>(null);
   const isMac = navigator.platform.toUpperCase().includes("MAC");
-  const [containerWidth, setContainerWidth] = React.useState(800);
 
-  React.useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver(([entry]) =>
-      setContainerWidth(entry.contentRect.width),
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
+  const [containerRef, containerWidth] = useContainerWidth();
+  const deferredSearch = React.useDeferredValue(search);
 
   const filtered = React.useMemo(() => {
     const q = deferredSearch.trim().toLowerCase();
@@ -331,10 +70,12 @@ export default function MasteryGrid() {
   const searchOptions = React.useMemo(() => {
     const pool = filterSearch
       ? allItems.filter((i) => {
-          if (masteredFilter === 'hide' && mastered.has(i.uniqueName)) return false;
-          if (masteredFilter === 'only' && !mastered.has(i.uniqueName)) return false;
-          if (primeFilter === 'prime' && !i.isPrime) return false;
-          if (primeFilter === 'non-prime' && i.isPrime) return false;
+          if (masteredFilter === "hide" && mastered.has(i.uniqueName))
+            return false;
+          if (masteredFilter === "only" && !mastered.has(i.uniqueName))
+            return false;
+          if (primeFilter === "prime" && !i.isPrime) return false;
+          if (primeFilter === "non-prime" && i.isPrime) return false;
           return true;
         })
       : allItems;
@@ -343,23 +84,12 @@ export default function MasteryGrid() {
 
   const masteredCount = React.useMemo(
     () => filtered.filter((i) => mastered.has(i.uniqueName)).length,
-    [filtered, mastered],
+    [filtered, mastered]
   );
-
-  const searchValueRef = React.useRef(search);
-  searchValueRef.current = search;
-  const searchOptionsRef = React.useRef(searchOptions);
-  searchOptionsRef.current = searchOptions;
-  const filterSearchRef = React.useRef(filterSearch);
-  filterSearchRef.current = filterSearch;
-  const masteredFilterRef = React.useRef(masteredFilter);
-  masteredFilterRef.current = masteredFilter;
-  const masteredSetRef = React.useRef(mastered);
-  masteredSetRef.current = mastered;
 
   const cols = Math.max(
     1,
-    Math.floor((containerWidth + GAP) / (CARD_MIN_WIDTH + GAP)),
+    Math.floor((containerWidth + GAP) / (CARD_MIN_WIDTH + GAP))
   );
   const rows = Math.ceil(filtered.length / cols);
 
@@ -391,168 +121,56 @@ export default function MasteryGrid() {
         return updated;
       });
     },
-    [],
+    []
   );
 
-  React.useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        searchRef.current?.focus();
-        return;
-      }
-      const item = highlightedRef.current;
-      if (!(e.metaKey || e.ctrlKey)) return;
-      const num = parseInt(e.key);
-      if (item) {
-        if (e.code === "Space") {
-          e.preventDefault();
-          toggle(item.uniqueName);
-          const willBeMastered = !masteredSetRef.current.has(item.uniqueName);
-          const hidingMastered = filterSearchRef.current && masteredFilterRef.current === 'hide';
-          const showingOnlyMastered = filterSearchRef.current && masteredFilterRef.current === 'only';
-          if ((hidingMastered && willBeMastered) || (showingOnlyMastered && !willBeMastered)) {
-            const q = searchValueRef.current.trim().toLowerCase();
-            const next = searchOptionsRef.current
-              .filter((name) => name !== item.name && (!q || name.toLowerCase().includes(q)))
-              .map((name) => itemByName.get(name) ?? null)
-              .find(Boolean) ?? null;
-            highlightedRef.current = next;
-          }
-          return;
-        }
-        if (num >= 1 && num <= 4 && item.parts[num - 1]) {
-          e.preventDefault();
-          togglePart(item.uniqueName, item.parts[num - 1].uniqueName);
-          return;
-        }
-      } else {
-        if (e.key === ".") {
-          e.preventDefault();
-          setCategory(
-            (prev) =>
-              CATEGORIES[(CATEGORIES.indexOf(prev) + 1) % CATEGORIES.length],
-          );
-          return;
-        }
-        if (e.key === ",") {
-          e.preventDefault();
-          setCategory(
-            (prev) =>
-              CATEGORIES[
-                (CATEGORIES.indexOf(prev) - 1 + CATEGORIES.length) %
-                  CATEGORIES.length
-              ],
-          );
-          return;
-        }
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [toggle, togglePart, setCategory]);
+  useKeyboardShortcuts({
+    toggle,
+    togglePart,
+    setCategory,
+    searchRef,
+    highlightedRef,
+    search,
+    searchOptions,
+    filterSearch,
+    masteredFilter,
+    mastered,
+  });
 
-  const importRef = React.useRef<HTMLInputElement>(null);
-
-  function handleExport() {
-    const data = { mastered: [...mastered], parts };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'wfst-progress.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function handleImport(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target?.result as string);
-        if (Array.isArray(data.mastered)) {
-          const next = new Set<string>(data.mastered);
-          setMastered(next);
-          saveMastered(next);
-        }
-        if (data.parts && typeof data.parts === 'object') {
-          setParts(data.parts);
-          saveParts(data.parts);
-        }
-      } catch { /* ignore bad file */ }
-      e.target.value = '';
-    };
-    reader.readAsText(file);
-  }
+  const { handleExport, handleImport, importRef } = useImportExport(
+    mastered,
+    parts,
+    setMastered,
+    setParts
+  );
 
   return (
     <Box sx={{ width: "100%" }}>
       <Box sx={{ px: 2, pt: 2, pb: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-          <Typography variant="h5">
-            Warframe Mastery Tracker
-          </Typography>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5 }}>
+          <Typography variant="h5">Warframe Mastery Tracker</Typography>
           <Tooltip title="GitHub">
             <Box
               component="a"
               href="https://github.com/dalgam/wfst"
               target="_blank"
               rel="noopener noreferrer"
-              sx={{ display: 'flex', alignItems: 'center', color: 'text.secondary', '&:hover': { color: 'text.primary' } }}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                color: "text.secondary",
+                "&:hover": { color: "text.primary" },
+              }}
             >
               <GitHubIcon fontSize="small" />
             </Box>
           </Tooltip>
         </Box>
-        <Dialog open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Keyboard Shortcuts</DialogTitle>
-          <DialogContent>
-            {[
-              { heading: 'Global' },
-              { keys: [isMac ? '⌘' : 'Ctrl', 'K'], desc: 'Focus search bar' },
-              { heading: 'No item selected (not searching)' },
-              { keys: [isMac ? '⌘' : 'Ctrl', ','], desc: 'Cycle category left' },
-              { keys: [isMac ? '⌘' : 'Ctrl', '.'], desc: 'Cycle category right' },
-              { heading: 'While searching' },
-              { keys: ['↑', '↓'], desc: 'Navigate autocomplete results' },
-              { keys: ['Esc'], desc: 'Clear search and close autocomplete' },
-              { heading: 'Item selected / highlighted in search' },
-              { keys: [isMac ? '⌘' : 'Ctrl', 'Space'], desc: 'Toggle mastered on highlighted item' },
-              { keys: [isMac ? '⌘' : 'Ctrl', '1'], desc: 'Toggle component 1 on highlighted item' },
-              { keys: [isMac ? '⌘' : 'Ctrl', '2'], desc: 'Toggle component 2 on highlighted item' },
-              { keys: [isMac ? '⌘' : 'Ctrl', '3'], desc: 'Toggle component 3 on highlighted item' },
-              { keys: [isMac ? '⌘' : 'Ctrl', '4'], desc: 'Toggle component 4 on highlighted item' },
-              { heading: 'Card image' },
-              { keys: [isMac ? '⌘' : 'Ctrl', 'click'], desc: 'Open wiki page for item in new tab' },
-            ].map((row, i) =>
-              'heading' in row ? (
-                <Typography key={i} variant="overline" color="text.secondary" sx={{ display: 'block', mt: i === 0 ? 0 : 2 }}>
-                  {row.heading}
-                </Typography>
-              ) : (
-                <Table key={i} size="small" sx={{ mb: 0 }}>
-                  <TableBody>
-                    <TableRow sx={{ '&:last-child td': { border: 0 } }}>
-                      <TableCell sx={{ width: 180, pl: 0 }}>
-                        <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                          {row.keys.map((k, ki) => (
-                            <React.Fragment key={ki}>
-                              {ki > 0 && <Typography variant="caption" color="text.disabled">+</Typography>}
-                              <Kbd>{k}</Kbd>
-                            </React.Fragment>
-                          ))}
-                        </Box>
-                      </TableCell>
-                      <TableCell sx={{ color: 'text.secondary' }}>{row.desc}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              )
-            )}
-          </DialogContent>
-        </Dialog>
+        <ShortcutsDialog
+          open={shortcutsOpen}
+          onClose={() => setShortcutsOpen(false)}
+          isMac={isMac}
+        />
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
           <Typography
             variant="body2"
@@ -589,19 +207,48 @@ export default function MasteryGrid() {
           <ToggleButtonGroup
             value={primeFilter}
             exclusive
-            onChange={(_, v) => { if (v) setPrimeFilter(v); }}
+            onChange={(_, v) => {
+              if (v) setPrimeFilter(v);
+            }}
             size="small"
           >
-            <ToggleButton value="all" sx={{ px: 1.5 }}>All</ToggleButton>
-            <ToggleButton value="prime" sx={{ px: 1.5 }}>Prime</ToggleButton>
-            <ToggleButton value="non-prime" sx={{ px: 1.5 }}>Non-Prime</ToggleButton>
+            <ToggleButton value="all" sx={{ px: 1.5 }}>
+              All
+            </ToggleButton>
+            <ToggleButton value="prime" sx={{ px: 1.5 }}>
+              Prime
+            </ToggleButton>
+            <ToggleButton value="non-prime" sx={{ px: 1.5 }}>
+              Non-Prime
+            </ToggleButton>
           </ToggleButtonGroup>
-          <Button size="small" variant="outlined" onClick={handleExport}>Export</Button>
-          <Button size="small" variant="outlined" onClick={() => importRef.current?.click()}>Import</Button>
-          <input ref={importRef} type="file" accept=".json" hidden onChange={handleImport} />
-          <Button size="small" variant="outlined" startIcon={<HelpOutlineIcon />} onClick={() => setShortcutsOpen(true)}>Shortcuts</Button>
+          <Button size="small" variant="outlined" onClick={handleExport}>
+            Export
+          </Button>
+          <Button
+            size="small"
+            variant="outlined"
+            onClick={() => importRef.current?.click()}
+          >
+            Import
+          </Button>
+          <input
+            ref={importRef}
+            type="file"
+            accept=".json"
+            hidden
+            onChange={handleImport}
+          />
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<HelpOutlineIcon />}
+            onClick={() => setShortcutsOpen(true)}
+          >
+            Shortcuts
+          </Button>
         </Box>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
           <Autocomplete
             freeSolo
             sx={{ flex: 1 }}
@@ -611,28 +258,41 @@ export default function MasteryGrid() {
               const q = state.inputValue.trim().toLowerCase();
               if (!q) return options;
               const matches = options.filter((o) => o.toLowerCase().includes(q));
-              return matches.length > 0 ? matches : ['__no_results__'];
+              return matches.length > 0 ? matches : ["__no_results__"];
             }}
             inputValue={search}
             onInputChange={(_, value) => {
               setSearch(value);
               const q = value.trim().toLowerCase();
               const matchName = q
-                ? searchOptionsRef.current.find((name) => name.toLowerCase().includes(q))
+                ? searchOptions.find((name) =>
+                    name.toLowerCase().includes(q)
+                  )
                 : undefined;
-              highlightedRef.current = matchName ? (itemByName.get(matchName) ?? null) : null;
-            }}
-            onChange={(_, value) => { if (value !== '__no_results__') setSearch(value ?? ""); }}
-            onHighlightChange={(_, option) => {
-              highlightedRef.current = (option && option !== '__no_results__')
-                ? (itemByName.get(option) ?? null)
+              highlightedRef.current = matchName
+                ? (itemByName.get(matchName) ?? null)
                 : null;
             }}
+            onChange={(_, value) => {
+              if (value !== "__no_results__") setSearch(value ?? "");
+            }}
+            onHighlightChange={(_, option) => {
+              highlightedRef.current =
+                option && option !== "__no_results__"
+                  ? (itemByName.get(option) ?? null)
+                  : null;
+            }}
             renderOption={(props, option) => {
-              if (option === '__no_results__') {
+              if (option === "__no_results__") {
                 return (
-                  <li {...props} key="__no_results__" style={{ pointerEvents: 'none' }}>
-                    <Typography variant="body2" color="text.secondary">No results</Typography>
+                  <li
+                    {...props}
+                    key="__no_results__"
+                    style={{ pointerEvents: "none" }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      No results
+                    </Typography>
                   </li>
                 );
               }
@@ -648,19 +308,40 @@ export default function MasteryGrid() {
                       e.preventDefault();
                       openWiki(item.wikiaUrl);
                     } else {
-                      (props as React.HTMLAttributes<HTMLLIElement>).onClick?.(e);
+                      (props as React.HTMLAttributes<HTMLLIElement>).onClick?.(
+                        e
+                      );
                     }
                   }}
                 >
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5, py: 0.5, width: "100%" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                      <CheckCircleIcon sx={{ fontSize: 16, color: itemMastered ? "primary.main" : "action.disabled" }} />
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 0.5,
+                      py: 0.5,
+                      width: "100%",
+                    }}
+                  >
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    >
+                      <CheckCircleIcon
+                        sx={{
+                          fontSize: 16,
+                          color: itemMastered
+                            ? "primary.main"
+                            : "action.disabled",
+                        }}
+                      />
                       <Typography variant="body2">{option}</Typography>
                     </Box>
                     {item && item.parts.length > 0 && (
                       <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
                         {item.parts.map((part) => {
-                          const partDone = obtainedParts.includes(part.uniqueName);
+                          const partDone = obtainedParts.includes(
+                            part.uniqueName
+                          );
                           return (
                             <Chip
                               key={part.uniqueName}
@@ -695,13 +376,34 @@ export default function MasteryGrid() {
               />
             )}
           />
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
-            <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd><Typography variant="caption" color="text.disabled">+</Typography><Kbd>K</Kbd>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 0.5,
+              flexShrink: 0,
+            }}
+          >
+            <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
+            <Typography variant="caption" color="text.disabled">
+              +
+            </Typography>
+            <Kbd>K</Kbd>
           </Box>
           <Tooltip title="Apply active mastered and Prime filters to search results">
             <FormControlLabel
-              control={<Checkbox size="small" checked={filterSearch} onChange={(e) => setFilterSearch(e.target.checked)} />}
-              label={<Typography variant="body2" sx={{ whiteSpace: 'nowrap' }}>Filter search</Typography>}
+              control={
+                <Checkbox
+                  size="small"
+                  checked={filterSearch}
+                  onChange={(e) => setFilterSearch(e.target.checked)}
+                />
+              }
+              label={
+                <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                  Filter search
+                </Typography>
+              }
               sx={{ mr: 0, flexShrink: 0 }}
             />
           </Tooltip>
@@ -732,24 +434,30 @@ export default function MasteryGrid() {
           color="text.disabled"
           sx={{ pr: 2, whiteSpace: "nowrap" }}
         >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Kbd>{isMac ? '⌘' : 'Ctrl'}</Kbd><Typography variant="caption" color="text.disabled">+</Typography><Kbd>,</Kbd><Typography variant="caption" color="text.disabled">/</Typography><Kbd>.</Kbd>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+            <Kbd>{isMac ? "⌘" : "Ctrl"}</Kbd>
+            <Typography variant="caption" color="text.disabled">
+              +
+            </Typography>
+            <Kbd>,</Kbd>
+            <Typography variant="caption" color="text.disabled">
+              /
+            </Typography>
+            <Kbd>.</Kbd>
           </Box>
         </Typography>
       </Box>
 
       <Box ref={containerRef} sx={{ px: 2, pt: 2 }}>
         {filtered.length === 0 && (
-          <Typography color="text.secondary" sx={{ py: 4, textAlign: 'center' }}>
+          <Typography
+            color="text.secondary"
+            sx={{ py: 4, textAlign: "center" }}
+          >
             No results
           </Typography>
         )}
-        <Box
-          sx={{
-            height: virtualizer.getTotalSize(),
-            position: "relative",
-          }}
-        >
+        <Box sx={{ height: virtualizer.getTotalSize(), position: "relative" }}>
           {virtualizer.getVirtualItems().map((virtualRow) => {
             const startIdx = virtualRow.index * cols;
             const rowItems = filtered.slice(startIdx, startIdx + cols);
