@@ -18,7 +18,7 @@ import GitHubIcon from "@mui/icons-material/GitHub";
 import HelpOutlineIcon from "@mui/icons-material/HelpOutlined";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import type { WFItem } from "./types";
-import { CATEGORIES, CARD_MIN_WIDTH, CARD_HEIGHT, GAP, allItems, itemByName } from "./constants";
+import { CATEGORIES, CARD_MIN_WIDTH, CARD_HEIGHT, CARD_HEIGHT_NO_IMAGES, GAP, allItems, itemByName } from "./constants";
 import { loadMastered, saveMastered, loadParts, saveParts, loadShowImages, saveShowImages } from "./storage";
 import { openWiki } from "./utils";
 import { Kbd } from "./components/Kbd";
@@ -96,9 +96,13 @@ export default function MasteryGrid() {
 
   const virtualizer = useWindowVirtualizer({
     count: rows,
-    estimateSize: () => CARD_HEIGHT + GAP,
+    estimateSize: () => (showImages ? CARD_HEIGHT : CARD_HEIGHT_NO_IMAGES) + GAP,
     overscan: 3,
   });
+
+  React.useEffect(() => {
+    virtualizer.measure();
+  }, [showImages]);
 
   const toggle = React.useCallback((uniqueName: string) => {
     setMastered((prev) => {
@@ -505,7 +509,7 @@ export default function MasteryGrid() {
                   top: virtualRow.start,
                   left: 0,
                   right: 0,
-                  height: CARD_HEIGHT,
+                  height: showImages ? CARD_HEIGHT : CARD_HEIGHT_NO_IMAGES,
                   display: "grid",
                   gridTemplateColumns: `repeat(${cols}, 1fr)`,
                   gap: GAP,

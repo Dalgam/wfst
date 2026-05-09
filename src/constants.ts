@@ -21,6 +21,7 @@ export const PARTS_KEY = "wfst-parts";
 export const SHOW_IMAGES_KEY = "wfst-show-images";
 export const CARD_MIN_WIDTH = 192;
 export const CARD_HEIGHT = 360;
+export const CARD_HEIGHT_NO_IMAGES = 180;
 export const GAP = 16;
 
 export const allItems = itemsData as WFItem[];

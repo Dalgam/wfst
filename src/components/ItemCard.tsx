@@ -8,7 +8,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import type { WFItem } from "../types";
-import { CARD_HEIGHT, IMG_CDN } from "../constants";
+import { CARD_HEIGHT, CARD_HEIGHT_NO_IMAGES, IMG_CDN } from "../constants";
 import { getImageUrl, openWiki } from "../utils";
 
 const FALLBACK = "/wfst/OrokinOrdisConfused.png";
@@ -41,7 +41,7 @@ export const ItemCard = React.memo(function ItemCard({
       sx={{
         display: "flex",
         flexDirection: "column",
-        height: CARD_HEIGHT,
+        height: showImages ? CARD_HEIGHT : "auto",
         borderRadius: 1,
         overflow: "hidden",
         border: "2px solid",
@@ -63,28 +63,25 @@ export const ItemCard = React.memo(function ItemCard({
           position: "relative",
           cursor: "pointer",
           overflow: "hidden",
-          flex: 1,
+          ...(showImages ? { flex: 1 } : { minHeight: 32 }),
         }}
       >
-        <Box
-          component="img"
-          src={imageSrc}
-          alt={item.name}
-          loading="lazy"
-          sx={{
-            width: "100%",
-            height: "100%",
-            objectFit: "contain",
-            display: showImages ? "block" : "none",
-          }}
-          onError={(e) => {
-            const img = e.target as HTMLImageElement;
-            const fallback = img.src.includes(IMG_CDN) ? FALLBACK : `${IMG_CDN}${item.imageName}`;
-            resolvedSrc.set(item.uniqueName, fallback);
-            setImageSrc(fallback);
-            img.onerror = null;
-          }}
-        />
+        {showImages && (
+          <Box
+            component="img"
+            src={imageSrc}
+            alt={item.name}
+            loading="lazy"
+            sx={{ width: "100%", height: "100%", objectFit: "contain", display: "block" }}
+            onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              const fallback = img.src.includes(IMG_CDN) ? FALLBACK : `${IMG_CDN}${item.imageName}`;
+              resolvedSrc.set(item.uniqueName, fallback);
+              setImageSrc(fallback);
+              img.onerror = null;
+            }}
+          />
+        )}
         <Box
           component={item.wikiaUrl ? "a" : "div"}
           href={item.wikiaUrl}
