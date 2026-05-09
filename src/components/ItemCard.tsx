@@ -8,7 +8,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
 import type { WFItem } from "../types";
-import { CARD_HEIGHT, CARD_HEIGHT_NO_IMAGES, IMG_CDN } from "../constants";
+import { CARD_HEIGHT, IMG_CDN } from "../constants";
 import { getImageUrl, openWiki } from "../utils";
 
 const FALLBACK = "/wfst/OrokinOrdisConfused.png";
