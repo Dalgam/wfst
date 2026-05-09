@@ -1,4 +1,4 @@
-import { MASTERED_KEY, PARTS_KEY } from "./constants";
+import { MASTERED_KEY, PARTS_KEY, SHOW_IMAGES_KEY } from "./constants";
 
 export function loadMastered(): Set<string> {
   try {
@@ -26,4 +26,13 @@ export function loadParts(): Record<string, string[]> {
 
 export function saveParts(parts: Record<string, string[]>) {
   localStorage.setItem(PARTS_KEY, JSON.stringify(parts));
+}
+
+export function loadShowImages(): boolean {
+  const raw = localStorage.getItem(SHOW_IMAGES_KEY);
+  return raw !== null ? raw === "true" : false;
+}
+
+export function saveShowImages(value: boolean) {
+  localStorage.setItem(SHOW_IMAGES_KEY, String(value));
 }

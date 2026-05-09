@@ -19,7 +19,7 @@ import HelpOutlineIcon from "@mui/icons-material/HelpOutlined";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import type { WFItem } from "./types";
 import { CATEGORIES, CARD_MIN_WIDTH, CARD_HEIGHT, GAP, allItems, itemByName } from "./constants";
-import { loadMastered, saveMastered, loadParts, saveParts } from "./storage";
+import { loadMastered, saveMastered, loadParts, saveParts, loadShowImages, saveShowImages } from "./storage";
 import { openWiki } from "./utils";
 import { Kbd } from "./components/Kbd";
 import { ItemCard } from "./components/ItemCard";
@@ -47,6 +47,7 @@ export default function MasteryGrid() {
   const [shortcutsOpen, setShortcutsOpen] = React.useState(false);
   const [filterSearch, setFilterSearch] = React.useState(false);
   const [showUnobtainable, setShowUnobtainable] = React.useState(false);
+  const [showImages, setShowImages] = React.useState(loadShowImages);
 
   const highlightedRef = React.useRef<WFItem | null>(null);
   const searchRef = React.useRef<HTMLInputElement>(null);
@@ -424,6 +425,24 @@ export default function MasteryGrid() {
               sx={{ mr: 0, flexShrink: 0 }}
             />
           </Tooltip>
+          <FormControlLabel
+            control={
+              <Checkbox
+                size="small"
+                checked={showImages}
+                onChange={(e) => {
+                  setShowImages(e.target.checked);
+                  saveShowImages(e.target.checked);
+                }}
+              />
+            }
+            label={
+              <Typography variant="body2" sx={{ whiteSpace: "nowrap" }}>
+                Show images
+              </Typography>
+            }
+            sx={{ mr: 0, flexShrink: 0 }}
+          />
         </Box>
       </Box>
 
@@ -498,6 +517,7 @@ export default function MasteryGrid() {
                     item={item}
                     done={mastered.has(item.uniqueName)}
                     obtainedParts={parts[item.uniqueName] ?? []}
+                    showImages={showImages}
                     onToggle={toggle}
                     onTogglePart={togglePart}
                   />
